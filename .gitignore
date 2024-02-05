@@ -1,2 +1,5 @@
 dataset_modelo/
 clean-folders-ai/
+runs/
+data_predict/
+__pycache__/
