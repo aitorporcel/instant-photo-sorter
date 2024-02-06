@@ -38,7 +38,7 @@ def classify_images(source_dir, output_dir, model, device, transform, class_name
     predict_dataset = FolderDataset(root_dir=source_dir, transform=transform)
     predict_loader = DataLoader(predict_dataset, batch_size=1, shuffle=False)
 
-    dataset_size = len(predict_loader)
+    dataset_size = len(predict_dataset)
     for i, (images, paths) in enumerate(predict_loader):
         images = images.to(device)
         with torch.no_grad():
@@ -48,10 +48,10 @@ def classify_images(source_dir, output_dir, model, device, transform, class_name
         destination_folder = os.path.join(output_dir, predicted_class)
         for path in paths:
             shutil.copy(path, destination_folder)
-    # Update progress bar after each iteration
-    progress = int((i + 1) / dataset_size * 100)
-    progress_callback.emit(progress)
-    QLabel("Images have been classified and organized.").show()
+
+        # Emit the progress update
+        progress = int((i + 1) / dataset_size * 100)
+        progress_callback.emit(progress)
 
 class ClassificationThread(QThread):
     update_progress = Signal(int)
@@ -110,10 +110,32 @@ class App(QWidget):
         self.outputBtn.clicked.connect(self.selectOutputFolder)
         layout.addWidget(self.outputBtn)
         
-        # Classify Button
+        # Add some vertical spacing
+        spacer = QLabel("")  # An empty label can act as a spacer
+        layout.addWidget(spacer)
+        
+        # Classify Button with style and spacing
         self.classifyBtn = QPushButton('Classify Images')
+        self.classifyBtn.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;  /* Blue */
+                color: white;
+                border-radius: 5px;  /* Rounded corners */
+                padding: 5px;  /* Padding inside the button */
+                border: 1px solid #0D47A1;  /* Slightly darker blue border for depth */
+            }
+            QPushButton:hover {
+                background-color: #1976D2;  /* Slightly darker blue when mouse hovers over */
+            }
+            QPushButton:pressed {
+                background-color: #0D47A1;  /* Even darker blue when button is pressed */
+            }
+        """)
         self.classifyBtn.clicked.connect(self.startClassification)
         layout.addWidget(self.classifyBtn)
+        
+        # Add spacing after the button
+        layout.addSpacing(20)
         
         # Progress Bar
         self.progressBar = QProgressBar(self)
