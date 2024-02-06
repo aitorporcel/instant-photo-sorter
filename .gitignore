@@ -3,3 +3,5 @@ clean-folders-ai/
 runs/
 data_predict/
 __pycache__/
+test_data/
+output/

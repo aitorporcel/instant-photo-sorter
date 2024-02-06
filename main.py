@@ -5,9 +5,7 @@ from torch.utils.data import DataLoader, random_split
 from torchvision import models
 import torch.nn as nn
 import torch.optim as optim
-from sklearn.metrics import classification_report, confusion_matrix
-import numpy as np
-#import matplotlib.pyplot as plt
+
 from torch.utils.tensorboard import SummaryWriter
 import datetime
 from utils import evaluate_model, train_model, evaluate_model_per_class
@@ -35,17 +33,23 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
+transform_test = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
 
 # Cargar el dataset completo
 dataset = ImageFolder(root='dataset_modelo', transform=transform)
+test_dataset = ImageFolder(root='test_data', transform=transform_test)
+
 
 # Tamaños para dividir: por ejemplo, 70% entrenamiento, 15% validación, 15% prueba
 train_size = int(0.7 * len(dataset))
-val_size = int(0.15 * len(dataset))
-test_size = len(dataset) - train_size - val_size
+val_size = len(dataset) - train_size
 
 # Dividir el dataset
-train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size])
+train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
 # Less batch size is usually good for regularization
 batch_size = 16 #initial 32
@@ -66,11 +70,22 @@ for param in model.parameters():
 num_ftrs = model.fc.in_features
 model.fc = nn.Linear(num_ftrs, 4)
 
+# Unfreeze the last few layers
+for param in model.layer4.parameters():
+    param.requires_grad = True
+
 model = model.to(device)
 
 # Definir la función de pérdida y el optimizador
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.fc.parameters(), lr=0.0005) #Initial 0.001
+#optimizer = optim.Adam(model.fc.parameters(), lr=0.0005) #Initial 0.001
+
+# Define the optimizer with specific parameters and learning rates
+optimizer = optim.Adam([
+    {'params': model.fc.parameters()},
+    {'params': model.layer4.parameters(), 'lr': 1e-5}
+], lr=0.0005)
+
 
 # Asegúrate de pasar `val_loader` a la función de entrenamiento
 model_trained = train_model(model, criterion, optimizer, train_loader, val_loader, device, writer, num_epochs=20)
@@ -79,10 +94,10 @@ model_trained = train_model(model, criterion, optimizer, train_loader, val_loade
 # y val_loader se creó a partir de val_dataset
 
 # Después del entrenamiento, evaluar el modelo en el conjunto de validación
-evaluate_model_per_class(model_trained, val_loader, criterion, device)
+evaluate_model_per_class(model_trained, val_loader, criterion, device, test_eval=False)
 
 # Después del entrenamiento, evaluar el modelo en el conjunto de testeo
-evaluate_model_per_class(model_trained, test_loader, criterion, device)
+evaluate_model_per_class(model_trained, test_loader, criterion, device, test_eval=True)
 
 # Guardar el modelo entrenado
-torch.save(model_trained.state_dict(), 'models/model_trained.pth')
+#torch.save(model_trained.state_dict(), 'models/model_trained.pth')

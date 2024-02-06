@@ -13,6 +13,7 @@ num_ftrs = model.fc.in_features
 model.fc = nn.Linear(num_ftrs, 4)  # Adjust according to your number of classes
 model.load_state_dict(torch.load('models/model_trained.pth'))
 model.eval()  # Set the model to inference mode
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
