@@ -4,7 +4,7 @@ import torchvision.models as models
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 import os
 import shutil
 from PySide2.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QFileDialog, QLineEdit, QProgressBar, QMessageBox
@@ -16,21 +16,29 @@ class FolderDataset(Dataset):
         self.root_dir = root_dir
         self.transform = transform
         self.image_files = [f for f in os.listdir(root_dir) if os.path.isfile(os.path.join(root_dir, f))]
-    
+        self.failed_images = []  # Keep track of failed images
+
     def __len__(self):
         return len(self.image_files)
     
     def __getitem__(self, idx):
         img_name = os.path.join(self.root_dir, self.image_files[idx])
-        image = Image.open(img_name)
-        if self.transform:
-            image = self.transform(image)
+        try:
+            image = Image.open(img_name)
+            if self.transform:
+                image = self.transform(image)
+        except UnidentifiedImageError:
+            self.failed_images.append(img_name)
+            # Instead of returning None, return a placeholder tensor and the image name
+            placeholder = torch.zeros(1, 1, 1)  # Adjust dimensions as needed
+            return placeholder, img_name
         return image, img_name
 
-def classify_images(source_dir, output_dir, model, device, transform, class_names, progress_callback):
+
+def classify_images(source_dir, output_dir, model, device, transform, class_names, progress_callback, failed_folder="Failed"):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    for class_name in class_names:
+    for class_name in class_names + [failed_folder]:  # Ensure the Failed folder is also created
         class_dir = os.path.join(output_dir, class_name)
         if not os.path.exists(class_dir):
             os.makedirs(class_dir)
@@ -40,18 +48,27 @@ def classify_images(source_dir, output_dir, model, device, transform, class_name
 
     dataset_size = len(predict_dataset)
     for i, (images, paths) in enumerate(predict_loader):
-        images = images.to(device)
-        with torch.no_grad():
-            outputs = model(images)
-            _, preds = torch.max(outputs, 1)
-        predicted_class = class_names[preds[0]]
-        destination_folder = os.path.join(output_dir, predicted_class)
-        for path in paths:
-            shutil.copy(path, destination_folder)
+        # Use a specific condition to detect the placeholder tensor
+        # Here, it's assumed the placeholder tensor is a single-element tensor
+        if isinstance(images, torch.Tensor) and images.nelement() == 1:  # Placeholder tensor detected
+            predicted_class = failed_folder
+            destination_folder = os.path.join(output_dir, predicted_class)
+            for path in paths:
+                shutil.copy(path, destination_folder)
+        else:
+            images = images.to(device)
+            with torch.no_grad():
+                outputs = model(images)
+                _, preds = torch.max(outputs, 1)
+            predicted_class = class_names[preds[0]]
+            destination_folder = os.path.join(output_dir, predicted_class)
+            for path in paths:
+                shutil.copy(path, destination_folder)
 
         # Emit the progress update
         progress = int((i + 1) / dataset_size * 100)
         progress_callback.emit(progress)
+
 
 class ClassificationThread(QThread):
     update_progress = Signal(int)
@@ -183,7 +200,9 @@ if __name__ == '__main__':
     model.to(device)
 
     # Define the Transform
+    # Adjust the transform to ensure all images are converted to RGB
     transform = transforms.Compose([
+        transforms.Lambda(lambda image: image.convert('RGB')),  # Convert image to RGB
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
