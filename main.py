@@ -25,6 +25,7 @@ print(f"Device: {device}")
 
 # Transformaciones de los datos
 transform = transforms.Compose([
+    transforms.Lambda(lambda image: image.convert('RGB')),  # Convert image to RGB
     transforms.Resize((224, 224)),
     transforms.RandomHorizontalFlip(),
     transforms.RandomRotation(10),
@@ -34,6 +35,7 @@ transform = transforms.Compose([
 ])
 
 transform_test = transforms.Compose([
+    transforms.Lambda(lambda image: image.convert('RGB')),  # Convert image to RGB
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
