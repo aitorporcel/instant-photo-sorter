@@ -7,3 +7,7 @@ test_data/
 output/
 WhatsApp Images/
 data_predict_aux/
+Notes.md
+build/
+dist/
+app.spec
