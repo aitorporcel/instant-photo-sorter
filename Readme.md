@@ -90,5 +90,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Contact
 
-Add LinkedIn
+LinkedIn: [https://www.linkedin.com/in/aitorporcellaburu/](https://www.linkedin.com/in/aitorporcellaburu/)
 Project Link: [https://github.com/your-username/your-project-name](https://github.com/your-username/your-project-name)

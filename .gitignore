@@ -1,4 +1,4 @@
-dataset_modelo/
+train_data/
 clean-folders-ai/
 runs/
 data_predict/
@@ -11,3 +11,5 @@ Notes.md
 build/
 dist/
 app.spec
+output_aux/
+combined_whatsapp/

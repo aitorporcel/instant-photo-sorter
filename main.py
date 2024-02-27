@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision import models, transforms
 from torchvision.datasets import ImageFolder
 
-from utils import evaluate_model, train_model, evaluate_model_per_class
+from utils import train_model, evaluate_model_per_class
 
 def main(num_epochs: int, batch_size: int, train_split: float):
     now = datetime.datetime.now()
@@ -34,7 +34,7 @@ def main(num_epochs: int, batch_size: int, train_split: float):
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 
-    dataset = ImageFolder(root='dataset_modelo', transform=transform)
+    dataset = ImageFolder(root='train_data', transform=transform)
     test_dataset = ImageFolder(root='test_data', transform=transform_test)
 
     train_size = int(train_split * len(dataset))

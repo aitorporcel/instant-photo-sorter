@@ -10,8 +10,12 @@ import shutil
 from PySide2.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QFileDialog, QLineEdit, QProgressBar, QMessageBox
 from PySide2.QtGui import QIcon, QFont
 from PySide2.QtCore import Qt, QThread, Signal
+from datetime import datetime
 
 class FolderDataset(Dataset):
+    """
+    Dataset to load images from a folder.
+    """
     def __init__(self, root_dir, transform=None):
         self.root_dir = root_dir
         self.transform = transform
@@ -36,43 +40,65 @@ class FolderDataset(Dataset):
 
 
 def classify_images(source_dir, output_dir, model, device, transform, class_names, progress_callback, failed_folder="Failed"):
+    """Classify images from source_dir using model and output to output_dir.
+
+    Args:
+        source_dir (str): Directory containing images to classify.
+        output_dir (str): Directory to output classified images.
+        model (torch.nn.Module): PyTorch model to use for classification.
+        device (torch.device): Device to run model on.
+        transform (torchvision.transforms): Transforms to apply to images before classifying.
+        class_names (List[str]): List of class name strings.
+        progress_callback (Callable): Callback to report progress.
+        failed_folder (str): Folder name for failed classifications.
+
+    """
+    
+    # Create output directory if needed
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    for class_name in class_names + [failed_folder]:  # Ensure the Failed folder is also created
+
+    # Ensure failed folder exists
+    for class_name in class_names + [failed_folder]:  
         class_dir = os.path.join(output_dir, class_name)
         if not os.path.exists(class_dir):
             os.makedirs(class_dir)
 
+    # Classify images
     predict_dataset = FolderDataset(root_dir=source_dir, transform=transform)
     predict_loader = DataLoader(predict_dataset, batch_size=1, shuffle=False)
 
     dataset_size = len(predict_dataset)
     for i, (images, paths) in enumerate(predict_loader):
-        # Use a specific condition to detect the placeholder tensor
-        # Here, it's assumed the placeholder tensor is a single-element tensor
-        if isinstance(images, torch.Tensor) and images.nelement() == 1:  # Placeholder tensor detected
+        
+        # Check for placeholder tensor indicating failure
+        if isinstance(images, torch.Tensor) and images.nelement() == 1:  
             predicted_class = failed_folder
-            destination_folder = os.path.join(output_dir, predicted_class)
-            for path in paths:
-                shutil.copy(path, destination_folder)
+        
         else:
+            # Classify image
             images = images.to(device)
             with torch.no_grad():
                 outputs = model(images)
                 _, preds = torch.max(outputs, 1)
             predicted_class = class_names[preds[0]]
-            destination_folder = os.path.join(output_dir, predicted_class)
-            for path in paths:
-                shutil.copy(path, destination_folder)
+        
+        # Copy image to output folder
+        destination_folder = os.path.join(output_dir, predicted_class)
+        for path in paths:
+            shutil.copy(path, destination_folder)
 
-        # Emit the progress update
+        # Emit progress update
         progress = int((i + 1) / dataset_size * 100)
         progress_callback.emit(progress)
 
 
 class ClassificationThread(QThread):
+    """
+    Thread for running the classification in the background.
+    """
     update_progress = Signal(int)
-    classification_done = Signal()
+    classification_done = Signal(str)  # Modified to emit a string with the elapsed time
 
     def __init__(self, source_dir, output_dir, model, device, transform, class_names):
         QThread.__init__(self)
@@ -84,10 +110,17 @@ class ClassificationThread(QThread):
         self.class_names = class_names
 
     def run(self):
+        start_time = datetime.now()  # Start timing
         classify_images(self.source_dir, self.output_dir, self.model, self.device, self.transform, self.class_names, self.update_progress)
-        self.classification_done.emit()
+        elapsed_time = datetime.now() - start_time  # Calculate elapsed time
+        minutes, seconds = divmod(elapsed_time.seconds, 60)
+        elapsed_time_str = f"{minutes} minutes, {seconds} seconds"
+        self.classification_done.emit(elapsed_time_str)  # Emit the elapsed time
 
 class App(QWidget):
+    """
+    Main application window.
+    """
     def __init__(self, model, device, transform, class_names):
         super().__init__()
         self.title = 'Image Classifier'
@@ -186,8 +219,9 @@ class App(QWidget):
     def updateProgressBar(self, value):
         self.progressBar.setValue(value)
 
-    def classificationFinished(self):
-        QMessageBox.information(self, "Information", "Images have been classified and organized.")
+    def classificationFinished(self, elapsed_time_str):
+        QMessageBox.information(self, "Classification Completed", f"Images have been classified and organized.\nTime taken: {elapsed_time_str}.")
+
 
 if __name__ == '__main__':
     # Setup the Model
@@ -208,7 +242,7 @@ if __name__ == '__main__':
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 
-    class_names = ['Memes', 'Paisajes', 'Personas', 'Varios']  # Adjust as per your classes
+    class_names = ['Landscapes', 'Memes', 'People', 'Various']
     
     app = QApplication(sys.argv)
     ex = App(model, device, transform, class_names)
