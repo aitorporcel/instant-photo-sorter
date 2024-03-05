@@ -12,6 +12,22 @@ from PySide2.QtGui import QIcon, QFont
 from PySide2.QtCore import Qt, QThread, Signal
 from datetime import datetime
 
+import sys
+from pathlib import Path
+import torch
+
+# Function to get the path of the data directory
+def resource_path(relative_path):
+    """ Get the absolute path to the resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = Path(__file__).parent
+
+    return Path(base_path) / relative_path
+
+
 class FolderDataset(Dataset):
     """
     Dataset to load images from a folder.
@@ -225,10 +241,12 @@ class App(QWidget):
 
 if __name__ == '__main__':
     # Setup the Model
+    model_path = resource_path('models/model_trained.pth')
     model = models.resnet50(pretrained=False)
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, 4)  # Adjust according to your number of classes
-    model.load_state_dict(torch.load('models/model_trained.pth'))
+    #model.load_state_dict(torch.load('models/model_trained.pth'))
+    model.load_state_dict(torch.load(model_path))
     model.eval()  # Set the model to inference mode
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)

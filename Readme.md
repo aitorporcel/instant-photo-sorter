@@ -62,10 +62,10 @@ To train your own model with custom datasets, follow these steps:
 
 To classify your images using the GUI:
 
-1. **Start the Application**: Run `main.py` without any arguments to launch the GUI.
+1. **Start the Application**: Run `app.py` without any arguments to launch the GUI.
 
    ```sh
-   python main.py
+   python app.py
    ```
 
 2. **Select Source and Output Folders**: In the GUI, choose the folder containing the images you wish to classify and specify the output directory where classified images will be stored.
