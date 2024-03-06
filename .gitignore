@@ -14,3 +14,4 @@ app.spec
 output_aux/
 combined_whatsapp/
 classify_and_organize_images.py
+predict.py
