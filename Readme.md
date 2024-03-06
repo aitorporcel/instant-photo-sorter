@@ -1,4 +1,4 @@
-# Instance photo sorter
+# Instant photo sorter
 
 This project aims to classify a large collection of cellphone images into four specific categories. It's designed for individuals looking to organize and categorize images stored in their devices, particularly those accumulated through apps like WhatsApp. The application utilizes a fine-tuned ResNet50 model for image classification and offers two main functionalities: training your own model with custom data or using the pre-trained model to classify your images.
 
@@ -79,6 +79,35 @@ To classify your images using the GUI:
 - `train_data/`: Default directory for the training dataset.
 - `test_data/`: Default directory for the test dataset.
 - `models/`: Directory where trained models are saved.
+
+## Creating an Executable File
+
+You can package this application into an executable file for easier distribution and use, without needing to set up a Python environment. This process is facilitated by PyInstaller, which bundles the application and all its dependencies into a single executable file.
+
+### Prerequisites
+
+- Ensure PyInstaller is installed in your environment:
+  ```sh
+  pip install pyinstaller
+  ```
+
+### Building the Executable
+
+1. **Navigate to Your Project Directory**: Open a terminal or command prompt and change to the directory containing your project files.
+
+2. **Run PyInstaller**: Use the following command to generate the executable.
+
+   ```sh
+   pyinstaller --onefile --windowed --add-data="models/model_trained.pth:models" app.py
+   ```
+
+   Note: Specify the resource with a source path and a target path, separated by a platform-specific character (`;` for Windows, `:` for Linux/MacOS).
+
+3. **Locate the Executable**: After the build process completes, find your executable in the `dist` directory within your project folder.
+
+4. **Run the Executable**: You can now distribute and run the generated executable file without needing a Python environment installed.
+
+Note: Building an executable with PyInstaller works best when your project is fully functional in a Python environment. If you encounter issues, ensure all dependencies are correctly installed and the application runs as expected before packaging it with PyInstaller.
 
 ## Contributing
 
