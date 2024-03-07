@@ -236,7 +236,7 @@ class App(QWidget):
         self.progressBar.setValue(value)
 
     def classificationFinished(self, elapsed_time_str):
-        QMessageBox.information(self, "Classification Completed", f"Images have been classified and organized.\nTime taken: {elapsed_time_str}.")
+        QMessageBox.information(self, "Classification Completed", f"The images have been classified and organized.\nTime taken: {elapsed_time_str}.")
 
 
 if __name__ == '__main__':
