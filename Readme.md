@@ -130,4 +130,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Contact
 
 LinkedIn: [https://www.linkedin.com/in/aitorporcellaburu/](https://www.linkedin.com/in/aitorporcellaburu/)
+
 Project Link: [https://github.com/aitorporcel/instant-photo-sorter](https://github.com/aitorporcel/instant-photo-sorter)
