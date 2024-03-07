@@ -1,6 +1,6 @@
 # Instant photo sorter
 
-This project aims to classify a large collection of cellphone images into four specific categories. It's designed for individuals looking to organize and categorize images stored in their devices, particularly those accumulated through apps like WhatsApp. The application utilizes a fine-tuned ResNet50 model for image classification and offers two main functionalities: training your own model with custom data or using the pre-trained model to classify your images.
+This project aims to classify a large collection of mobile images into four specific categories. It's designed for individuals looking to organize and categorize images stored in their devices, particularly those accumulated through apps like WhatsApp. The application utilizes a fine-tuned ResNet50 model for image classification and offers two main functionalities: training your own model with custom data or using the pre-trained model to classify your images.
 
 ## Application Screenshots
 
