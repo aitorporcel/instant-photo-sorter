@@ -1,6 +1,7 @@
 import sys
 import torch
 import torchvision.models as models
+import torchvision
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
@@ -16,8 +17,10 @@ import sys
 from pathlib import Path
 import torch
 
+from typing import List
+
 # Function to get the path of the data directory
-def resource_path(relative_path):
+def resource_path(relative_path: str) -> Path:
     """ Get the absolute path to the resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
@@ -55,7 +58,10 @@ class FolderDataset(Dataset):
         return image, img_name
 
 
-def classify_images(source_dir, output_dir, model, device, transform, class_names, progress_callback, failed_folder="Failed"):
+def classify_images(source_dir: str, output_dir: str, model: torch.nn.Module,
+                    device: torch.device, transform: torchvision.transforms,
+                    class_names: List[str], progress_callback,
+                    failed_folder: str="Failed"):
     """Classify images from source_dir using model and output to output_dir.
 
     Args:
@@ -154,7 +160,7 @@ class App(QWidget):
         self.setWindowTitle("Image Classifier")
         self.setGeometry(300, 300, 600, 300)  # Updated for better layout
         self.setFont(QFont("Arial", 10))  # Modern font
-        self.setWindowIcon(QIcon("app_icon.png"))  # Set the path to your application icon
+        self.setWindowIcon(QIcon("app_icon.png"))
         
         layout = QVBoxLayout()
         
@@ -245,7 +251,6 @@ if __name__ == '__main__':
     model = models.resnet50(pretrained=False)
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, 4)  # Adjust according to your number of classes
-    #model.load_state_dict(torch.load('models/model_trained.pth'))
     model.load_state_dict(torch.load(model_path))
     model.eval()  # Set the model to inference mode
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
