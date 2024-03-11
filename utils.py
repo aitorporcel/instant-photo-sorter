@@ -6,10 +6,9 @@ from torch.utils.tensorboard import SummaryWriter
 from sklearn.metrics import classification_report, confusion_matrix
 
 
-def evaluate_model(model: nn.Module,
-                   val_loader: DataLoader,
-                   criterion: nn.Module,
-                   device: torch.device) -> Tuple[float, float]:
+def evaluate_model(
+    model: nn.Module, val_loader: DataLoader, criterion: nn.Module, device: torch.device
+) -> Tuple[float, float]:
     """
     Evaluate the model on the validation set.
 
@@ -43,15 +42,17 @@ def evaluate_model(model: nn.Module,
     return avg_loss, accuracy
 
 
-def train_model(model: nn.Module,
-                criterion: nn.Module,
-                optimizer: optim.Optimizer,
-                train_loader: DataLoader,
-                val_loader: DataLoader,
-                device: torch.device,
-                writer: SummaryWriter,
-                num_epochs: int = 25,
-                save_path: str = 'models/model_trained.pth') -> nn.Module:
+def train_model(
+    model: nn.Module,
+    criterion: nn.Module,
+    optimizer: optim.Optimizer,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    device: torch.device,
+    writer: SummaryWriter,
+    num_epochs: int = 25,
+    save_path: str = "models/model_trained.pth",
+) -> nn.Module:
     """
     Train the model and evaluate it on the validation set after each epoch.
 
@@ -69,7 +70,7 @@ def train_model(model: nn.Module,
     Returns:
         The trained model with the best validation loss.
     """
-    best_val_loss = float('inf')
+    best_val_loss = float("inf")
 
     for epoch in range(num_epochs):
         model.train()  # Set the model to training mode
@@ -86,7 +87,7 @@ def train_model(model: nn.Module,
             optimizer.step()
 
             running_loss += loss.item()
-            writer.add_scalar('Loss/train', loss.item(), epoch * len(train_loader) + i)
+            writer.add_scalar("Loss/train", loss.item(), epoch * len(train_loader) + i)
 
         epoch_loss = running_loss / len(train_loader)
         # Calculate train accuracy
@@ -98,26 +99,30 @@ def train_model(model: nn.Module,
             best_val_loss = val_loss
             torch.save(model.state_dict(), save_path)
 
-        writer.add_scalar('Loss/train_avg', epoch_loss, epoch)
-        writer.add_scalar('Loss/val_avg', val_loss, epoch)
-        writer.add_scalar('Accuracy/train', train_accuracy, epoch)
-        writer.add_scalar('Accuracy/val', val_accuracy, epoch)
+        writer.add_scalar("Loss/train_avg", epoch_loss, epoch)
+        writer.add_scalar("Loss/val_avg", val_loss, epoch)
+        writer.add_scalar("Accuracy/train", train_accuracy, epoch)
+        writer.add_scalar("Accuracy/val", val_accuracy, epoch)
         writer.flush()
 
-        print(f'Epoch {epoch+1}/{num_epochs}, Train Loss: {epoch_loss:.4f}, '
-              f'Train Accuracy: {train_accuracy:.2f}%, Val Loss: {val_loss:.4f}, '
-              f'Val Accuracy: {val_accuracy:.2f}%')
+        print(
+            f"Epoch {epoch+1}/{num_epochs}, Train Loss: {epoch_loss:.4f}, "
+            f"Train Accuracy: {train_accuracy:.2f}%, Val Loss: {val_loss:.4f}, "
+            f"Val Accuracy: {val_accuracy:.2f}%"
+        )
 
     model.load_state_dict(torch.load(save_path))
 
     return model
 
 
-def evaluate_model_per_class(model: nn.Module,
-                             val_loader: DataLoader,
-                             criterion: nn.Module,
-                             device: torch.device,
-                             test_eval: bool = False) -> None:
+def evaluate_model_per_class(
+    model: nn.Module,
+    val_loader: DataLoader,
+    criterion: nn.Module,
+    device: torch.device,
+    test_eval: bool = False,
+) -> None:
     """
     Evaluate the model per class on the validation set and print classification report
     and confusion matrix.
@@ -141,7 +146,9 @@ def evaluate_model_per_class(model: nn.Module,
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 
-    classes = val_loader.dataset.classes if test_eval else val_loader.dataset.dataset.classes
+    classes = (
+        val_loader.dataset.classes if test_eval else val_loader.dataset.dataset.classes
+    )
 
     print(classification_report(all_labels, all_preds, target_names=classes))
 

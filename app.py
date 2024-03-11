@@ -8,7 +8,17 @@ from torchvision import transforms
 from PIL import Image, UnidentifiedImageError
 import os
 import shutil
-from PySide2.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QFileDialog, QLineEdit, QProgressBar, QMessageBox
+from PySide2.QtWidgets import (
+    QApplication,
+    QWidget,
+    QVBoxLayout,
+    QPushButton,
+    QLabel,
+    QFileDialog,
+    QLineEdit,
+    QProgressBar,
+    QMessageBox,
+)
 from PySide2.QtGui import QIcon, QFont
 from PySide2.QtCore import Qt, QThread, Signal
 from datetime import datetime
@@ -19,9 +29,10 @@ import torch
 
 from typing import List
 
+
 # Function to get the path of the data directory
 def resource_path(relative_path: str) -> Path:
-    """ Get the absolute path to the resource, works for dev and for PyInstaller """
+    """Get the absolute path to the resource, works for dev and for PyInstaller"""
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
@@ -35,15 +46,18 @@ class FolderDataset(Dataset):
     """
     Dataset to load images from a folder.
     """
+
     def __init__(self, root_dir, transform=None):
         self.root_dir = root_dir
         self.transform = transform
-        self.image_files = [f for f in os.listdir(root_dir) if os.path.isfile(os.path.join(root_dir, f))]
+        self.image_files = [
+            f for f in os.listdir(root_dir) if os.path.isfile(os.path.join(root_dir, f))
+        ]
         self.failed_images = []  # Keep track of failed images
 
     def __len__(self):
         return len(self.image_files)
-    
+
     def __getitem__(self, idx):
         img_name = os.path.join(self.root_dir, self.image_files[idx])
         try:
@@ -58,10 +72,16 @@ class FolderDataset(Dataset):
         return image, img_name
 
 
-def classify_images(source_dir: str, output_dir: str, model: torch.nn.Module,
-                    device: torch.device, transform: torchvision.transforms,
-                    class_names: List[str], progress_callback,
-                    failed_folder: str="Failed"):
+def classify_images(
+    source_dir: str,
+    output_dir: str,
+    model: torch.nn.Module,
+    device: torch.device,
+    transform: torchvision.transforms,
+    class_names: List[str],
+    progress_callback,
+    failed_folder: str = "Failed",
+):
     """Classify images from source_dir using model and output to output_dir.
 
     Args:
@@ -75,13 +95,13 @@ def classify_images(source_dir: str, output_dir: str, model: torch.nn.Module,
         failed_folder (str): Folder name for failed classifications.
 
     """
-    
+
     # Create output directory if needed
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     # Ensure failed folder exists
-    for class_name in class_names + [failed_folder]:  
+    for class_name in class_names + [failed_folder]:
         class_dir = os.path.join(output_dir, class_name)
         if not os.path.exists(class_dir):
             os.makedirs(class_dir)
@@ -92,11 +112,11 @@ def classify_images(source_dir: str, output_dir: str, model: torch.nn.Module,
 
     dataset_size = len(predict_dataset)
     for i, (images, paths) in enumerate(predict_loader):
-        
+
         # Check for placeholder tensor indicating failure
-        if isinstance(images, torch.Tensor) and images.nelement() == 1:  
+        if isinstance(images, torch.Tensor) and images.nelement() == 1:
             predicted_class = failed_folder
-        
+
         else:
             # Classify image
             images = images.to(device)
@@ -104,7 +124,7 @@ def classify_images(source_dir: str, output_dir: str, model: torch.nn.Module,
                 outputs = model(images)
                 _, preds = torch.max(outputs, 1)
             predicted_class = class_names[preds[0]]
-        
+
         # Copy image to output folder
         destination_folder = os.path.join(output_dir, predicted_class)
         for path in paths:
@@ -119,6 +139,7 @@ class ClassificationThread(QThread):
     """
     Thread for running the classification in the background.
     """
+
     update_progress = Signal(int)
     classification_done = Signal(str)  # Modified to emit a string with the elapsed time
 
@@ -133,19 +154,29 @@ class ClassificationThread(QThread):
 
     def run(self):
         start_time = datetime.now()  # Start timing
-        classify_images(self.source_dir, self.output_dir, self.model, self.device, self.transform, self.class_names, self.update_progress)
+        classify_images(
+            self.source_dir,
+            self.output_dir,
+            self.model,
+            self.device,
+            self.transform,
+            self.class_names,
+            self.update_progress,
+        )
         elapsed_time = datetime.now() - start_time  # Calculate elapsed time
         minutes, seconds = divmod(elapsed_time.seconds, 60)
         elapsed_time_str = f"{minutes} minutes, {seconds} seconds"
         self.classification_done.emit(elapsed_time_str)  # Emit the elapsed time
 
+
 class App(QWidget):
     """
     Main application window.
     """
+
     def __init__(self, model, device, transform, class_names):
         super().__init__()
-        self.title = 'Image Classifier'
+        self.title = "Image Classifier"
         self.left = 100
         self.top = 100
         self.width = 640
@@ -155,40 +186,41 @@ class App(QWidget):
         self.transform = transform
         self.class_names = class_names
         self.initUI()
-        
+
     def initUI(self):
         self.setWindowTitle("Image Classifier")
         self.setGeometry(300, 300, 600, 300)  # Updated for better layout
         self.setFont(QFont("Arial", 10))  # Modern font
         self.setWindowIcon(QIcon("app_icon.png"))
-        
+
         layout = QVBoxLayout()
-        
+
         # Source Folder Section
         self.sourceLabel = QLabel("Source Folder:")
         layout.addWidget(self.sourceLabel)
         self.sourceEdit = QLineEdit(self)
         layout.addWidget(self.sourceEdit)
-        self.sourceBtn = QPushButton('Browse Source Folder')
+        self.sourceBtn = QPushButton("Browse Source Folder")
         self.sourceBtn.clicked.connect(self.selectSourceFolder)
         layout.addWidget(self.sourceBtn)
-        
+
         # Output Folder Section
         self.outputLabel = QLabel("Output Folder:")
         layout.addWidget(self.outputLabel)
         self.outputEdit = QLineEdit(self)
         layout.addWidget(self.outputEdit)
-        self.outputBtn = QPushButton('Browse Output Folder')
+        self.outputBtn = QPushButton("Browse Output Folder")
         self.outputBtn.clicked.connect(self.selectOutputFolder)
         layout.addWidget(self.outputBtn)
-        
+
         # Add some vertical spacing
         spacer = QLabel("")  # An empty label can act as a spacer
         layout.addWidget(spacer)
-        
+
         # Classify Button with style and spacing
-        self.classifyBtn = QPushButton('Classify Images')
-        self.classifyBtn.setStyleSheet("""
+        self.classifyBtn = QPushButton("Classify Images")
+        self.classifyBtn.setStyleSheet(
+            """
             QPushButton {
                 background-color: #2196F3;  /* Blue */
                 color: white;
@@ -202,52 +234,67 @@ class App(QWidget):
             QPushButton:pressed {
                 background-color: #0D47A1;  /* Even darker blue when button is pressed */
             }
-        """)
+        """
+        )
         self.classifyBtn.clicked.connect(self.startClassification)
         layout.addWidget(self.classifyBtn)
-        
+
         # Add spacing after the button
         layout.addSpacing(20)
-        
+
         # Progress Bar
         self.progressBar = QProgressBar(self)
         self.progressBar.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.progressBar)
-        
+
         self.setLayout(layout)
-    
+
     def selectSourceFolder(self):
         directory = QFileDialog.getExistingDirectory(self, "Select Source Directory")
         if directory:
             self.sourceEdit.setText(directory)
-    
+
     def selectOutputFolder(self):
         directory = QFileDialog.getExistingDirectory(self, "Select Output Directory")
         if directory:
             self.outputEdit.setText(directory)
-    
+
     def startClassification(self):
         source_dir = self.sourceEdit.text()
         output_dir = self.outputEdit.text()
         if source_dir and output_dir:
             self.classification_thread = ClassificationThread(
-                source_dir, output_dir, self.model, self.device, self.transform, self.class_names)
+                source_dir,
+                output_dir,
+                self.model,
+                self.device,
+                self.transform,
+                self.class_names,
+            )
             self.classification_thread.update_progress.connect(self.updateProgressBar)
-            self.classification_thread.classification_done.connect(self.classificationFinished)
+            self.classification_thread.classification_done.connect(
+                self.classificationFinished
+            )
             self.classification_thread.start()
         else:
-            QMessageBox.warning(self, "Warning", "Please select both source and destination folders.")
+            QMessageBox.warning(
+                self, "Warning", "Please select both source and destination folders."
+            )
 
     def updateProgressBar(self, value):
         self.progressBar.setValue(value)
 
     def classificationFinished(self, elapsed_time_str):
-        QMessageBox.information(self, "Classification Completed", f"The images have been classified and organized.\nTime taken: {elapsed_time_str}.")
+        QMessageBox.information(
+            self,
+            "Classification Completed",
+            f"The images have been classified and organized.\nTime taken: {elapsed_time_str}.",
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Setup the Model
-    model_path = resource_path('models/model_trained.pth')
+    model_path = resource_path("models/model_trained.pth")
     model = models.resnet50(pretrained=False)
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, 4)  # Adjust according to your number of classes
@@ -258,15 +305,19 @@ if __name__ == '__main__':
 
     # Define the Transform
     # Adjust the transform to ensure all images are converted to RGB
-    transform = transforms.Compose([
-        transforms.Lambda(lambda image: image.convert('RGB')),  # Convert image to RGB
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
+    transform = transforms.Compose(
+        [
+            transforms.Lambda(
+                lambda image: image.convert("RGB")
+            ),  # Convert image to RGB
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
 
-    class_names = ['Landscapes', 'Memes', 'People', 'Various']
-    
+    class_names = ["Landscapes", "Memes", "People", "Various"]
+
     app = QApplication(sys.argv)
     ex = App(model, device, transform, class_names)
     ex.show()
